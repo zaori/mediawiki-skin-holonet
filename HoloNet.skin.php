@@ -276,7 +276,7 @@ class HoloNetTemplate extends BaseTemplate {
                     $link = $line_temp[0];
                 }
                 if ( Skin::makeInternalOrExternalUrl( $link ) ) {
-                    $href = $link;
+                    $href = Skin::makeInternalOrExternalUrl($link);
                 } else {
                     $title = Title::newFromText( $link );
                     if ( $title ) {
