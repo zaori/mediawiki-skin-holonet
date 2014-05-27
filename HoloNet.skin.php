@@ -120,7 +120,8 @@ class HoloNetTemplate extends BaseTemplate {
 				+ Linker::tooltipAndAccesskeyAttribs( 'p-logo' ) ); ?>
 			</div>
 			<?php
-			$this->renderPortals( $this->data['sidebar'] );
+			// $this->renderPortals( $this->data['sidebar'] );
+			$this->renderNavigation( 'sidebar2', 'A sidebar am I' );
 			?>
 		</div>
 		<!-- end of the left (by default at least) column -->
@@ -184,6 +185,114 @@ class HoloNetTemplate extends BaseTemplate {
 	echo Html::closeElement( 'html' );
 	wfRestoreWarnings();
 	} // end of execute() method
+
+        // Whee it is OTHER CODE from OTHER PLACE
+
+        /**
+         * Print arbitrary block of navigation
+         * @param $linksMessage
+         * @param $blockId
+         * Message parsing is limited to first 10 lines only for this skin.
+         */
+        private function renderNavigation( $linksMessage, $blockId ) {
+            $message = trim( wfMessage( $linksMessage )->text() );
+            $lines = explode( "\n", $message );
+            $links = array();
+            $last_level = 1;
+
+            foreach ( $lines as $line ) {
+                # ignore empty lines
+                if ( strlen( $line ) == 0 ) {
+                    continue;
+                }
+
+                # What level (number of asterisks) are we at?
+                if(!preg_match('/^(\*)*/', $line, $matches)) {
+                    // TODO: "ERROR: could not parse '$line'";
+                }
+                $level = strlen($matches[0]);
+                $level_change = $level - $last_level;
+
+                if($level_change > 0) {
+                    for($x = 0; $x < $level_change; $x++)
+                        $links[] = "li-add-sublist";
+                } else if($level_change < 0) {
+                    for($x = 0; $x < -$level_change; $x++)
+                        $links[] = "li-end-sublist";
+                } else if($last_level == $level) {
+                    // Do nothing.
+                } else {
+                    // TODO: "ERROR: level jumped from $last_level to $level"};
+                }
+                $last_level = $level;
+
+                $links[] = $this->parseItem( $line );
+            
+            }
+
+            // Close any leftover ULs.
+            for($x = 1; $x < $level; $x++)
+                $links[] = "li-end-sublist";
+
+            $this->customBox( $blockId, $links );
+        }
+
+        /**
+         * Extract the link text and destination (href) from a MediaWiki message
+         * and return them as an array.
+         */
+        private function parseItem( $line ) {
+            $item = array();
+
+            $line_temp = explode( '|', trim( $line, '* ' ), 3 );
+            if ( count( $line_temp ) > 1 ) {
+                $line = $line_temp[1];
+                $link = wfMessage( $line_temp[0] )->inContentLanguage()->text();
+
+                # Pull out third item as a class
+                if ( count( $line_temp ) == 3 ) {
+                    $item['class'] = Sanitizer::escapeClass( $line_temp[2] );
+                }
+            } else {
+                $line = $line_temp[0];
+                $link = $line_temp[0];
+            }
+            $item['id'] = Sanitizer::escapeId( $line );
+
+            # Determine what to show as the human-readable link description
+            if ( $line == 'zaori-link' ) {
+                # Daji time
+                $item['text'] = '';
+            } else if ( wfMessage( $line )->isDisabled() ) {
+                # It's *not* the name of a MediaWiki message, so display it as-is
+                $item['text'] = $line;
+            } else {
+                # Guess what -- it /is/ a MediaWiki message!
+                $item['text'] = wfMessage( $line )->text();
+            }
+
+            if ( $link != null ) {
+                if ( wfMessage( $line_temp[0] )->isDisabled() ) {
+                    $link = $line_temp[0];
+                }
+                if ( Skin::makeInternalOrExternalUrl( $link ) ) {
+                    $href = $link;
+                } else {
+                    $title = Title::newFromText( $link );
+                    if ( $title ) {
+                        $title = $title->fixSpecialName();
+                        $href = $title->getLocalURL();
+                    } else {
+                        $href = '#';
+                    }
+                }
+            }
+            $item['href'] = $href;
+
+            return $item;
+        }
+
+
 
 	/*************************************************************************************************/
 
@@ -330,7 +439,14 @@ class HoloNetTemplate extends BaseTemplate {
 			<ul>
 			<?php
 				foreach ( $cont as $key => $val ) {
-					echo $this->makeListItem( $key, $val );
+                                    // echo "key: $key, val: $val<br>";
+                                    if($val == 'li-add-sublist')
+                                        echo "<ul>\n";
+                                    else if($val == 'li-end-sublist')
+                                        echo "</ul>\n";
+                                    else
+					echo $this->makeListItem( $key, $val ) . "\n";
+
 				}
 			?>
 			</ul>
