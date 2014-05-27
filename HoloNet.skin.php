@@ -276,7 +276,7 @@ class HoloNetTemplate extends BaseTemplate {
                     $link = $line_temp[0];
                 }
                 if ( Skin::makeInternalOrExternalUrl( $link ) ) {
-                    $href = $link;
+                    $href = Skin::makeInternalOrExternalUrl($link);
                 } else {
                     $title = Title::newFromText( $link );
                     if ( $title ) {
@@ -438,14 +438,17 @@ class HoloNetTemplate extends BaseTemplate {
 			<?php   if ( is_array( $cont ) ) { ?>
 			<ul>
 			<?php
+                                $last_id = "top";
 				foreach ( $cont as $key => $val ) {
                                     // echo "key: $key, val: $val<br>";
                                     if($val == 'li-add-sublist')
-                                        echo "<ul>\n";
+                                        echo "<ul id='$last_id-sublist'>\n";
                                     else if($val == 'li-end-sublist')
                                         echo "</ul>\n";
-                                    else
+                                    else {
 					echo $this->makeListItem( $key, $val ) . "\n";
+                                        $last_id = $val['id'];
+                                    }
 
 				}
 			?>
